@@ -1,50 +1,53 @@
 ---
-- name: Ip Config
-  hosts: R1 
+- name: Cau hinh tren Router1
+  hosts: R1
   gather_facts: no
-
-  tasks: 
-  - name: dat ip e0/1 va e0/2
-    ios_l3_interfaces:
-      config:
-      - name: ethernet e0/1
-        ipv4:
-        - address: 192.168.1.1/24
-      - name: ethernet e0/2
-        ipv4:
-        - address: 192.168.12.1/24     
 
   tasks:
-    - name: make interfaces up
-      ios_l3_interfaces:
-        config:
-        - name: ethernet0/1 
-          enabled: true
-        config:
-        - name: ethernet0/2 
-          enabled: true  
-
-- name: Ip Config
-  hosts: R2 
+    - name: Dat IP cho cac cong
+      ios_l3_interface:
+        name: Ethernet0/{{ item.name }}
+        ipv4: 192.168.{{ item.number }}.1/24
+      with_items:
+        - { name: "1", number: 1}
+        - { name: "2", number: 12}
+    - name: no shut cac cong
+      ios_config:
+        parents:
+          - int Ethernet0/{{item.name}}
+        lines:
+          - no shut
+      with_items:
+        - { name: "1"}
+        - { name: "2"}
+    - name: configure static route
+      cisco.ios.ios_static_route:
+        prefix: 192.168.2.0
+        mask: 255.255.255.0
+        next_hop: 192.168.12.2
+- name: Cau hinh tren Router1
+  hosts: R2
   gather_facts: no
 
-  tasks: 
-  - name: dat ip e0/1 va e0/2
-    ios_l3_interfaces:
-      config:
-      - name: ethernet e0/1
-        ipv4:
-        - address: 192.168.2.1/24
-      - name: ethernet e0/2
-        ipv4:
-        - address: 192.168.12.2/24     
-
-  task:
-    - name: make interfaces up
-      ios_l3_interfaces:
-        config:
-        - name: ethernet0/1 
-          enabled: true
-        config:
-        - name: ethernet0/2 
-          enabled: true  
+  tasks:
+    - name: Dat IP cho cac cong
+      ios_l3_interface:
+        name: Ethernet0/{{ item.name }}
+        ipv4: 192.168.{{ item.number }}.{{ item.number1 }}/24
+      with_items:
+        - { name: "1", number: 2, number1: 1}
+        - { name: "2", number: 12, number1: 2}
+    - name: no shut cac cong
+      ios_config:
+        parents:
+          - int Ethernet0/{{item.name}}
+        lines:
+          - no shut
+      with_items:
+        - { name: "1"}
+        - { name: "2"}
+    - name: configure static route
+      cisco.ios.ios_static_route:
+        prefix: 192.168.1.0
+        mask: 255.255.255.0
+        next_hop: 192.168.12.1
