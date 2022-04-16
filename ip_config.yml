@@ -1,53 +1,94 @@
 ---
-- name: Cau hinh tren Router1
-  hosts: R1
+- hosts: R1
   gather_facts: no
 
   tasks:
-    - name: Dat IP cho cac cong
+    - name: Set Ethernet0/1 IPv4 address
       ios_l3_interface:
-        name: Ethernet0/{{ item.name }}
-        ipv4: 192.168.{{ item.number }}.1/24
-      with_items:
-        - { name: "1", number: 1}
-        - { name: "2", number: 12}
-    - name: no shut cac cong
-      ios_config:
-        parents:
-          - int Ethernet0/{{item.name}}
-        lines:
-          - no shut
-      with_items:
-        - { name: "1"}
-        - { name: "2"}
-    - name: configure static route
-      cisco.ios.ios_static_route:
+        name: Ethernet0/2
+        ipv4: 192.168.12.1/24
+    - name: no shut
+      ios_interface:
+        name: Ethernet0/2
+        state: present
+        
+    - name: Show ip
+      ios_command:
+        commands:
+          - show ip int brief
+      register: show_ip
+
+    - debug: var=show_ip.stdout_lines
+    
+    - name: Set Ethernet0/1 IPv4 address
+      ios_l3_interface:
+        name: Ethernet0/1
+        ipv4: 192.168.1.1/24
+    - name: no shut
+      ios_interface:
+        name: Ethernet0/1
+        state: present
+        
+    - name: Show ip
+      ios_command:
+        commands:
+          - show ip int brief
+      register: show_ip
+      
+    - name: configure static route to R2
+      ios_static_route:
         prefix: 192.168.2.0
         mask: 255.255.255.0
         next_hop: 192.168.12.2
-- name: Cau hinh tren Router1
-  hosts: R2
+
+    - debug: var=show_ip.stdout_lines
+    
+    
+- hosts: R2
   gather_facts: no
 
   tasks:
-    - name: Dat IP cho cac cong
+    - name: Set Ethernet0/1 IPv4 address
       ios_l3_interface:
-        name: Ethernet0/{{ item.name }}
-        ipv4: 192.168.{{ item.number }}.{{ item.number1 }}/24
-      with_items:
-        - { name: "1", number: 2, number1: 1}
-        - { name: "2", number: 12, number1: 2}
-    - name: no shut cac cong
-      ios_config:
-        parents:
-          - int Ethernet0/{{item.name}}
-        lines:
-          - no shut
-      with_items:
-        - { name: "1"}
-        - { name: "2"}
-    - name: configure static route
-      cisco.ios.ios_static_route:
+        name: Ethernet0/2
+        ipv4: 192.168.12.2/24
+    - name: no shut
+      ios_interface:
+        name: Ethernet0/2
+        state: present
+        
+    - name: Show ip
+      ios_command:
+        commands:
+          - show ip int brief
+      register: show_ip
+
+    - debug: var=show_ip.stdout_lines
+    
+    - name: Set Ethernet0/1 IPv4 address
+      ios_l3_interface:
+        name: Ethernet0/1
+        ipv4: 192.168.2.1/24
+    - name: no shut
+      ios_interface:
+        name: Ethernet0/1
+        state: present
+        
+    - name: Show ip
+      ios_command:
+        commands:
+          - show ip int brief
+      register: show_ip
+      
+    - name: configure static route to R1
+      ios_static_route:
         prefix: 192.168.1.0
         mask: 255.255.255.0
         next_hop: 192.168.12.1
+        
+    - name: Test ping R2 to R1
+      ios_ping:
+        dest: 192.168.1.1
+        source: e0/1
+
+    - debug: var=show_ip.stdout_lines
